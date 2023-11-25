@@ -37,7 +37,8 @@ const SearchFlight = () => {
   const { adults, children, infants } = useSelector((state) => state.travelers);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  console.log("selextedClass", selectedClass);
+
+  console.log("selectedClass", selectedClass);
   const handleIncrement = (type) => {
     switch (type) {
       case "adults":
@@ -82,6 +83,7 @@ const SearchFlight = () => {
     dispatch(saveTravelerDetails({ adults, children, infants }));
     console.log("data saved ", adults, children, infants);
   };
+
   const handleSearch = async (e) => {
     // debugger
     e.preventDefault();
@@ -102,7 +104,7 @@ const SearchFlight = () => {
         request_data: encryptedRequest,
       };
       const response = await axios.post(
-        BASE_URL + "/flight/flight-search-list",
+        BASE_URL + "/flight/search-flight-airport",
         requestBody,
         {
           headers,
@@ -118,7 +120,6 @@ const SearchFlight = () => {
           decryptedResponse.toString(CryptoJS.enc.Utf8)
         );
         console.log("jsonResponse is :", jsonResponse);
-        // navigate("/flight/list");
       } else {
         console.error("Error: Unexpected response structure", response);
       }
@@ -126,24 +127,9 @@ const SearchFlight = () => {
       console.error("Error:", error?.response?.data);
     }
   };
-  const obj = {
-    from_airport: selectedFromAirport,
-    to_airport: selectedToAirport,
-    departure_date: departure_date,
-    return_date: "YYYY-MM-DD",
-    adults: adults,
-    childs: children,
-    infants: infants,
-    class_type: selectedClass,
-    travel_type: travel_type,
-    max_result: max_result,
-    user_id: user_id,
-  };
-
   const handleSubmit = async (e) => {
-    debugger
+    // debugger
     e.preventDefault();
-    // console.log("obj data is :", obj);
     const encryptedRequest = encryptRequest(
       {
         from_airport: selectedFromAirport,
@@ -186,7 +172,7 @@ const SearchFlight = () => {
       const jsonResponse = JSON.parse(
         decryptedResponse.toString(CryptoJS.enc.Utf8)
       );
-      console.log(jsonResponse);
+      console.log("jjjjjjjjjj",jsonResponse);
       navigate("/flight/list");
     } else {
       console.error("Error: Unexpected response structure", response);
@@ -194,10 +180,10 @@ const SearchFlight = () => {
   };
   return (
     <section
-      className="h-screen flex items-center justify-center flex-col bg-cover"
+    className="h-screen flex flex-col bg-cover items-center justify-center"
       style={{ backgroundImage: `url(${backgroundImageUrl})` }}
     >
-      <form className="flex gap-5 justify-center mb-5" onSubmit={handleSearch}>
+      <form className="flex flex-col gap-5 justify-center mb-5 md:flex-row md:gap-10 w-full md:w-[80%]"  onSubmit={handleSearch}>
         <input
           type="text"
           value={searchKey}
@@ -205,28 +191,30 @@ const SearchFlight = () => {
           placeholder="Search flight here..."
           className="flex h-10 w-full rounded-md border border-gray-300 bg-[#232A30] px-3 py-2 text-sm text-[#C5C5D2] placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         />
-        <Button type="submit" className="bg-[#02ABC1]">
+        <Button type="submit" className="bg-[#02ABC1] w-full md:w-32">
           Search
         </Button>
       </form>
       <form
-        className="text-white w-[80%] h-[50%] bg-[#13171A] rounded-md shadow-md px-10 py-5"
+       className="text-white w-full md:w-[80%] h-[50%] bg-[#13171A] rounded-md shadow-md px-5 py-3 md:px-10 md:py-5"
         onSubmit={handleSubmit}
       >
-        <div className="my-4 grid gap-4 grid-cols-3 mb-4">
+        <div className="my-4 grid gap-4 grid-cols-1 md:grid-cols-3 mb-4">
           <div className="col-span-2 flex justify-around ">
             <div className="flex gap-3 flex-col">
               <label htmlFor="" className="text-base font-medium text-white ">
                 Flying From
               </label>
               <select
-                size="md"
-                label="Select Version"
-                className="px-3 py-3 rounded-md text-xs "
+                className="px-3 py-4 rounded-md text-xs "
                 style={{ minWidth: 300, backgroundColor: "#232A30" }}
                 value={selectedFromAirport}
                 onChange={(e) => handleFromAirportChange(e.target.value)}
               >
+                <option value="" disabled hidden>
+                  City OR Airport
+                </option>
+                <option value="Indira Gandhi international Airport,Delhi, India">Indira Gandhi international Airport,Delhi, India</option>
                 <option value="Mumbai">Mumbai</option>
                 <option value="Delhi">Delhi</option>
                 <option value="Pune">Pune</option>
@@ -242,13 +230,15 @@ const SearchFlight = () => {
                 Flying to
               </label>
               <select
-                size="md"
-                label="Select Version"
-                className="px-3 py-3 rounded-md text-xs "
+                className="px-3 py-4 rounded-md text-xs "
                 style={{ minWidth: 300, backgroundColor: "#232A30" }}
                 value={selectedToAirport}
                 onChange={(e) => handleToAirportChange(e.target.value)}
               >
+                <option value="" disabled hidden>
+                  City OR Airport
+                </option>
+                <option value="Hamad International Airport,Doha , Qatar">Hamad International Airport,Doha , Qatar</option>
                 <option value="Mumbai">Mumbai</option>
                 <option value="Delhi">Delhi</option>
                 <option value="Pune">Pune</option>
@@ -263,13 +253,13 @@ const SearchFlight = () => {
             </label>
             <input
               type="date"
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-[#232A30] px-3 py-2 text-sm text-[#C5C5D2] placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-[#232A30] px-3 py-4 text-sm text-[#C5C5D2] placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               value={departure_date}
               onChange={(e) => setDepartureDate(e.target.value)}
             />
           </div>
         </div>
-        <div className="px-5 grid grid-cols-3 gap-4">
+        <div className="px-5 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex gap-3 flex-col">
             <label htmlFor="" className="text-base font-medium text-white ">
               Traveller(s)
@@ -375,7 +365,6 @@ const SearchFlight = () => {
                     className="flex-shrink-0 w-full bg-[#02ABC1] text-white"
                     style={{ textTransform: "none" }}
                     onClick={handleSave}
-                    
                   >
                     Done
                   </Button>
@@ -388,13 +377,14 @@ const SearchFlight = () => {
               Prefered Class
             </label>
             <select
-              size="md"
-              label="Select Class"
-              className="px-3 py-3 rounded-md text-xs "
+              className="px-3 py-4 rounded-md text-xs "
               style={{ minWidth: 300, backgroundColor: "#232A30" }}
               value={selectedClass}
               onChange={(e) => handleClassChange(e.target.value)}
             >
+              <option value="" disabled hidden>
+                Select Class
+              </option>
               <option value="ECONOMY">Economy</option>
               <option value="PREMIUM ECONOMY">Premium Economy</option>
               <option value="BUSINESS">Business</option>
@@ -402,7 +392,7 @@ const SearchFlight = () => {
             </select>
           </div>
         </div>
-        <div className="flex mt-10 justify-center items-center">
+        <div className="flex mt-5 justify-center  items-center">
           <Button type="submit" className="bg-[#02ABC1]">
             Submit
           </Button>

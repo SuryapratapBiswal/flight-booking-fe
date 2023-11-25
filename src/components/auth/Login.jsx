@@ -1,30 +1,36 @@
+import axios from "axios";
+import * as yup from "yup";
+import CryptoJS from "crypto-js";
+import { useFormik } from "formik";
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import axios from "axios";
-import { CURRENCY, BASE_URL, API_KEY, SECRET_KEY } from "../config/index";
-import CryptoJS from "crypto-js";
 import { encryptRequest } from "../../utils/index";
 import { Link, useNavigate } from "react-router-dom";
+import {loginSchema} from "../../Validation/LoginValidation"
+import { CURRENCY, BASE_URL, API_KEY, SECRET_KEY } from "../config/index";
 
+const initialValues = {
+  email:"",
+  password:""
+}
 export default function Login() {
-  const [passwordVisible, setPasswordVisible] = useState(false);
+
+  // const [formData, setFormData] = useState({
+  //   email: "",
+  //   password: "",
+  // });
   const [apiResponse, setApiResponse] = useState(null);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const navigate = useNavigate();
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
-
-  const handleLogin = async (e) => {
+  const onSubmit = async (values) => {
     // debugger
-    e.preventDefault();
     try {
       const encryptedRequest = encryptRequest(
-        { email: formData?.email, password: formData?.password },
+        { email: initialValues.email, password: initialValues.password },
         SECRET_KEY
       );
       console.log("data:", encryptedRequest);
@@ -59,6 +65,13 @@ export default function Login() {
       console.error("Error:", error?.response?.data);
     }
   };
+ const {values ,errors ,touched, handleBlur, handleChange, handleSubmit} = useFormik({
+    initialValues,
+    validationSchema:loginSchema,
+    onSubmit,
+  })
+
+ 
 
   return (
     <section className="flex justify-center items-center h-screen bg-[#090F13]">
@@ -69,7 +82,7 @@ export default function Login() {
             Log in to your account
           </h2>
 
-          <form className="mt-8" onSubmit={handleLogin}>
+          <form className="mt-8" onSubmit={handleSubmit}>
             <div className="space-y-5">
               <div>
                 <label htmlFor="" className="text-base font-medium text-white">
@@ -79,13 +92,14 @@ export default function Login() {
                   <input
                     className="flex h-10 w-full rounded-md border border-gray-300 bg-[#232A30] px-3 py-2 text-sm text-[#C5C5D2] placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     type="email"
+                    name="email"
                     placeholder="Email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
+                    value={values.email}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
                   />
                 </div>
+                {errors.email && touched.email ? <p className="text-xs text-red-500 mt-2">{errors.email}</p>:null}
               </div>
               <div>
                 <div className="flex items-center justify-between">
@@ -100,11 +114,11 @@ export default function Login() {
                   <input
                     className="flex h-10 w-full rounded-md border border-gray-300 bg-[#232A30] px-3 py-2 text-sm text-[#C5C5D2] placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     type={passwordVisible ? "text" : "password"}
+                    name="password"
                     placeholder="Password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
+                    value={values.password}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
                   />
                   {passwordVisible ? (
                     <EyeOff
@@ -118,6 +132,7 @@ export default function Login() {
                     />
                   )}
                 </div>
+                {errors.email && touched.email ? <p className="text-xs text-red-500 mt-2">{errors.password}</p>:null}
               </div>
               <div className="flex justify-between items-center">
                 <button
