@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
   Button,
   Popover,
@@ -5,40 +6,50 @@ import {
   PopoverContent,
   Typography,
   IconButton,
+  Input,
 } from "@material-tailwind/react";
-import { ArrowLeftRight, User2 } from "lucide-react";
-import React, { useState } from "react";
-import { backgroundImageUrl } from "../config/index";
 import CryptoJS from "crypto-js";
-
-// import { getFlightListSliceAsync } from "../../store/apiSlice/flightList";
-import { CURRENCY, BASE_URL, API_KEY, SECRET_KEY } from "../config/index";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { encryptRequest } from "../../utils/index";
-import axios from "axios";
+import { backgroundImageUrl } from "../config/index";
+import { useDispatch, useSelector } from "react-redux";
+import { ArrowLeftRight, Building2, MapPin, StepForward, TimerReset, User2 } from "lucide-react";
+import { CURRENCY, BASE_URL, API_KEY, SECRET_KEY } from "../config/index";
 import {
   saveTravelerDetails,
   setAdults,
   setChildren,
   setInfants,
 } from "../../store/apiSlice/travelersSlice.js";
-import { useDispatch, useSelector } from "react-redux";
+import { searchFlightToAirport } from "../../store/apiSlice/flightToList.js";
+import { searchFlightFromAirport } from "../../store/apiSlice/flightFromList.js";
 
 const SearchFlight = () => {
-  const [selectedClass, setSelectedClass] = useState("");
-  const [selectedFromAirport, setSelectedFromAirport] = useState("");
-  const [selectedToAirport, setSelectedToAirport] = useState("");
-  const [departure_date, setDepartureDate] = useState("");
-  const [searchKey, setSearchKey] = useState("");
-
-  const travel_type = "oneway";
-  const max_result = 100;
   const user_id = 0;
-  const { adults, children, infants } = useSelector((state) => state.travelers);
+  const max_result = 100;
+  const travel_type = "oneway";
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  console.log("selectedClass", selectedClass);
+  const [searchKey, setSearchKey] = useState(null);
+  const [searchKey2, setSearchKey2] = useState(null);
+  const [selectedClass, setSelectedClass] = useState("");
+  const [departure_date, setDepartureDate] = useState("");
+  const [openFlightTo, setOpenFlightTo] = useState(undefined);
+  const [openFlightFrom, setOpenFlightFrom] = useState(undefined);
+  const [openTravellers, setopenTravellers] = useState(undefined);
+  const [selectedToAirport, setSelectedToAirport] = useState("");
+  const [selectedFromAirport, setSelectedFromAirport] = useState("");
+
+  const { adults, children, infants } = useSelector((state) => state.travelers);
+  const flightToListData = useSelector(
+    (state) => state.flightToData.flightToListData.data
+  );
+  const flightFromListData = useSelector(
+    (state) => state.flightFromData.flightFromListData.data
+  );
+
   const handleIncrement = (type) => {
     switch (type) {
       case "adults":
@@ -72,61 +83,21 @@ const SearchFlight = () => {
   const handleClassChange = (value) => {
     setSelectedClass(value);
   };
-  const handleFromAirportChange = (value) => {
-    setSelectedFromAirport(value);
-  };
-  const handleToAirportChange = (value) => {
-    setSelectedToAirport(value);
-  };
-
   const handleSave = () => {
     dispatch(saveTravelerDetails({ adults, children, infants }));
     console.log("data saved ", adults, children, infants);
+    setopenTravellers(false);
   };
 
-  const handleSearch = async (e) => {
-    // debugger
+  const handleSearchAirportFrom = async (e) => {
     e.preventDefault();
-    try {
-      const encryptedRequest = encryptRequest(
-        {
-          search_key: searchKey,
-        },
-        SECRET_KEY
-      );
-      console.log("encrypted data ", encryptedRequest);
-
-      const headers = {
-        apikey: API_KEY,
-        currency: CURRENCY,
-      };
-      const requestBody = {
-        request_data: encryptedRequest,
-      };
-      const response = await axios.post(
-        BASE_URL + "/flight/search-flight-airport",
-        requestBody,
-        {
-          headers,
-        }
-      );
-      console.log(response.data);
-      if (response && response.data) {
-        const decryptedResponse = CryptoJS.AES.decrypt(
-          response.data.response_data,
-          SECRET_KEY
-        );
-        const jsonResponse = JSON.parse(
-          decryptedResponse.toString(CryptoJS.enc.Utf8)
-        );
-        console.log("jsonResponse is :", jsonResponse);
-      } else {
-        console.error("Error: Unexpected response structure", response);
-      }
-    } catch (error) {
-      console.error("Error:", error?.response?.data);
-    }
+    dispatch(searchFlightFromAirport(searchKey));
   };
+  const handleSearchAirportTo = async (e) => {
+    e.preventDefault();
+    dispatch(searchFlightToAirport(searchKey2));
+  };
+
   const handleSubmit = async (e) => {
     // debugger
     e.preventDefault();
@@ -146,7 +117,6 @@ const SearchFlight = () => {
       },
       SECRET_KEY
     );
-    console.log("data:", encryptedRequest);
 
     const headers = {
       apikey: API_KEY,
@@ -163,7 +133,6 @@ const SearchFlight = () => {
         headers,
       }
     );
-    console.log("response.data", response.data);
     if (response && response.data) {
       const decryptedResponse = CryptoJS.AES.decrypt(
         response.data.response_data,
@@ -172,31 +141,53 @@ const SearchFlight = () => {
       const jsonResponse = JSON.parse(
         decryptedResponse.toString(CryptoJS.enc.Utf8)
       );
-      console.log("jjjjjjjjjj",jsonResponse);
+
       navigate("/flight/list");
     } else {
       console.error("Error: Unexpected response structure", response);
     }
   };
+  const handleAirportFromSelection = (selectedAirport) => {
+    setSelectedFromAirport(selectedAirport.short_name);
+    setOpenFlightFrom(false);
+  };
+  const handleAirportToSelection = (selectedAirport) => {
+    setSelectedToAirport(selectedAirport.short_name);
+    setOpenFlightTo(false);
+  };
   return (
     <section
-    className="h-screen flex flex-col bg-cover items-center justify-center"
+      className="h-screen flex flex-col bg-cover items-center justify-center"
       style={{ backgroundImage: `url(${backgroundImageUrl})` }}
     >
-      <form className="flex flex-col gap-5 justify-center mb-5 md:flex-row md:gap-10 w-full md:w-[80%]"  onSubmit={handleSearch}>
-        <input
-          type="text"
-          value={searchKey}
-          onChange={(e) => setSearchKey(e.target.value)}
-          placeholder="Search flight here..."
-          className="flex h-10 w-full rounded-md border border-gray-300 bg-[#232A30] px-3 py-2 text-sm text-[#C5C5D2] placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <Button type="submit" className="bg-[#02ABC1] w-full md:w-32">
-          Search
+      <div className="flex justify-start gap-4 mb-5">
+        <Button style={{textTransform:"none",backgroundColor:"#232A30", borderRadius:"25px"}}>
+          <div className="flex gap-2 items-center">
+            <StepForward />
+            <div>
+              <p>One way</p>
+            </div>
+          </div>
         </Button>
-      </form>
+        <Button style={{textTransform:"none",backgroundColor:"#232A30",borderRadius:"25px"}}>
+          <div className="flex gap-2 items-center">
+          <TimerReset />
+            <div>
+              <p>Round Trip</p>
+            </div>
+          </div>
+        </Button>
+        <Button style={{textTransform:"none",backgroundColor:"#232A30",borderRadius:"25px"}}>
+          <div className="flex gap-2 items-center">
+          <Building2 />
+            <div>
+              <p>Multi-City</p>
+            </div>
+          </div>
+        </Button>
+      </div>
       <form
-       className="text-white w-full md:w-[80%] h-[50%] bg-[#13171A] rounded-md shadow-md px-5 py-3 md:px-10 md:py-5"
+        className="text-white w-full md:w-[80%] h-[50%] bg-[#13171A] rounded-md shadow-md px-5 py-3 md:px-10 md:py-5"
         onSubmit={handleSubmit}
       >
         <div className="my-4 grid gap-4 grid-cols-1 md:grid-cols-3 mb-4">
@@ -205,22 +196,71 @@ const SearchFlight = () => {
               <label htmlFor="" className="text-base font-medium text-white ">
                 Flying From
               </label>
-              <select
-                className="px-3 py-4 rounded-md text-xs "
-                style={{ minWidth: 300, backgroundColor: "#232A30" }}
-                value={selectedFromAirport}
-                onChange={(e) => handleFromAirportChange(e.target.value)}
-              >
-                <option value="" disabled hidden>
-                  City OR Airport
-                </option>
-                <option value="Indira Gandhi international Airport,Delhi, India">Indira Gandhi international Airport,Delhi, India</option>
-                <option value="Mumbai">Mumbai</option>
-                <option value="Delhi">Delhi</option>
-                <option value="Pune">Pune</option>
-                <option value="Bhubaneswar">Bhubaneswar</option>
-                <option value="Jammu & Kashmir">jammu & Kashmir</option>
-              </select>
+              <Popover placement="bottom" open={openFlightFrom}>
+                <PopoverHandler>
+                  <Button
+                    style={{
+                      minWidth: 300,
+                      backgroundColor: "#232A30",
+                      textTransform: "none",
+                    }}
+                  >
+                    <div className="flex gap-2 justify-between items-center">
+                      <div className="text-white">
+                        {selectedFromAirport || "Flying From"}
+                      </div>
+                      <MapPin color="#02ABC1" />
+                    </div>
+                  </Button>
+                </PopoverHandler>
+                <PopoverContent className="w-96 bg-[#232A30]">
+                  <Typography variant="h6" color="white" className="mb-6">
+                    Select Flying From Airport name
+                  </Typography>
+                  <Typography
+                    variant="small"
+                    color="white"
+                    className="mb-1 font-bold"
+                  >
+                    Flying From
+                  </Typography>
+                  <div className="flex gap-2">
+                    <Input
+                      size="lg"
+                      placeholder="Search City OR Airport"
+                      className=" !border-t-blue-gray-200 focus:!border-t-gray-900 text-white"
+                      labelProps={{
+                        className: "before:content-none after:content-none",
+                      }}
+                      value={searchKey}
+                      onChange={(e) => setSearchKey(e.target.value)}
+                    />
+                    <Button
+                      variant="gradient"
+                      className="flex-shrink-0"
+                      style={{
+                        textTransform: "none",
+                        backgroundColor: "#02ABC1 !important",
+                      }}
+                      onClick={handleSearchAirportFrom}
+                    >
+                      Search City
+                    </Button>
+                  </div>
+                  {flightFromListData?.length > 0 &&
+                    flightFromListData.map((item) => {
+                      return (
+                        <div
+                          key={item.id}
+                          className="cursor-pointer hover:bg-gray-100 p-2"
+                          onClick={() => handleAirportFromSelection(item)}
+                        >
+                          <p className="text-xs mb-1">{item.short_name}</p>
+                        </div>
+                      );
+                    })}
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="flex items-end">
               <ArrowLeftRight size={40} />
@@ -229,22 +269,68 @@ const SearchFlight = () => {
               <label htmlFor="" className="text-base font-medium text-white ">
                 Flying to
               </label>
-              <select
-                className="px-3 py-4 rounded-md text-xs "
-                style={{ minWidth: 300, backgroundColor: "#232A30" }}
-                value={selectedToAirport}
-                onChange={(e) => handleToAirportChange(e.target.value)}
-              >
-                <option value="" disabled hidden>
-                  City OR Airport
-                </option>
-                <option value="Hamad International Airport,Doha , Qatar">Hamad International Airport,Doha , Qatar</option>
-                <option value="Mumbai">Mumbai</option>
-                <option value="Delhi">Delhi</option>
-                <option value="Pune">Pune</option>
-                <option value="Bhubaneswar">Bhubaneswar</option>
-                <option value="Jammu & Kashmir">jammu & Kashmir</option>
-              </select>
+              <Popover placement="bottom" open={openFlightTo}>
+                <PopoverHandler>
+                  <Button
+                    style={{
+                      minWidth: 300,
+                      backgroundColor: "#232A30",
+                      textTransform: "none",
+                    }}
+                  >
+                    <div className="flex gap-2 justify-between items-center">
+                      <div className="text-white">
+                        {selectedToAirport || "Flying to"}
+                      </div>
+                      <MapPin color="#02ABC1" />
+                    </div>
+                  </Button>
+                </PopoverHandler>
+                <PopoverContent className="w-96 bg-[#232A30]">
+                  <Typography variant="h6" color="white" className="mb-6">
+                    Select Flying to Airport name
+                  </Typography>
+                  <Typography
+                    variant="small"
+                    color="white"
+                    className="mb-1 font-bold"
+                  >
+                    Flying to
+                  </Typography>
+                  <div className="flex gap-2">
+                    <Input
+                      size="lg"
+                      placeholder="Search City OR Airport"
+                      className=" !border-t-blue-gray-200 focus:!border-t-gray-900 text-white"
+                      labelProps={{
+                        className: "before:content-none after:content-none",
+                      }}
+                      value={searchKey2}
+                      onChange={(e) => setSearchKey2(e.target.value)}
+                    />
+                    <Button
+                      variant="gradient"
+                      className="flex-shrink-0"
+                      style={{ textTransform: "none" }}
+                      onClick={handleSearchAirportTo}
+                    >
+                      Search City
+                    </Button>
+                  </div>
+                  {flightToListData?.length > 0 &&
+                    flightToListData.map((item) => {
+                      return (
+                        <div
+                          key={item.id}
+                          className="cursor-pointer hover:bg-gray-100 p-2"
+                          onClick={() => handleAirportToSelection(item)}
+                        >
+                          <p className="text-xs mb-1">{item.short_name}</p>
+                        </div>
+                      );
+                    })}
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
           <div className="flex gap-3 flex-col">
@@ -264,13 +350,13 @@ const SearchFlight = () => {
             <label htmlFor="" className="text-base font-medium text-white ">
               Traveller(s)
             </label>
-            <Popover placement="bottom">
+            <Popover placement="bottom" open={openTravellers}>
               <PopoverHandler>
                 <Button
                   style={{ textTransform: "none", backgroundColor: "#232A30" }}
                 >
                   <div className="flex justify-evenly items-center">
-                    <User2 />
+                    <User2 color="#02ABC1" />
                     <div>{adults} Adults</div>
                     <div className="w-[10px] h-[10px] rounded-full bg-[#02ABC1]" />
                     <div>{children} Child</div>

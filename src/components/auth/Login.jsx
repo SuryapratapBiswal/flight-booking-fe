@@ -26,7 +26,7 @@ export default function Login() {
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
-  const onSubmit = async (values) => {
+  const onSubmit = async (values,action) => {
     // debugger
     try {
       const encryptedRequest = encryptRequest(
@@ -61,6 +61,7 @@ export default function Login() {
       } else {
         console.error("Error: Unexpected response structure", response);
       }
+      action.resetForm()
     } catch (error) {
       console.error("Error:", error?.response?.data);
     }
